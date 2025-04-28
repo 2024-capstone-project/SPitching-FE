@@ -1,0 +1,306 @@
+# import library
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import torchvision
+from torchvision import transforms
+from torch.utils.data import DataLoader
+import time
+import matplotlib.pyplot as plt
+
+device = torch.device('mps'   if torch.backends.mps.is_available()  else 'cpu')
+print('Device:', device)
+
+# given
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.1307,), (0.3081,))
+])
+trainset   = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+trainloader = DataLoader(trainset, batch_size=64, shuffle=True)
+testset    = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform)
+testloader  = DataLoader(testset, batch_size=1000, shuffle=False)
+
+loss_fn = nn.CrossEntropyLoss()
+
+# === 1. Baseline MLP ===
+print("1번 시행")
+class BaselineMLP(nn.Module):
+    def __init__(self, hidden_size=32):
+        super(BaselineMLP, self).__init__()
+        self.fc1 = nn.Linear(28*28, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, 10)
+    def forward(self, x):
+        x = x.view(x.size(0), -1)
+        x = torch.sigmoid(self.fc1(x))
+        return self.fc2(x)
+
+baseline_model = BaselineMLP(32).to(device)
+baseline_opt   = optim.SGD(baseline_model.parameters(), lr=0.1)
+
+baseline_losses = []
+baseline_model.train()
+start = time.time()
+for epoch in range(10):
+    running = 0.0
+    for imgs, labels in trainloader:
+        imgs, labels = imgs.to(device), labels.to(device)
+        baseline_opt.zero_grad()
+        out = baseline_model(imgs)
+        loss= loss_fn(out, labels)
+        loss.backward()
+        baseline_opt.step()
+        running += loss.item()
+    avg = running/len(trainloader)
+    baseline_losses.append(avg)
+    print(f"[Baseline] Epoch {epoch+1}/10 Loss: {avg:.4f}")
+print(f"[Baseline] Time: {time.time()-start:.1f}s")
+
+baseline_model.eval()
+b_loss=0; b_corr=0; total=0
+with torch.no_grad():
+    for imgs, labels in testloader:
+        imgs, labels = imgs.to(device), labels.to(device)
+        out = baseline_model(imgs)
+        b_loss  += loss_fn(out, labels).item()*labels.size(0)
+        _,preds= torch.max(out,1)
+        b_corr += (preds==labels).sum().item()
+        total  += labels.size(0)
+print(f"[Baseline] Acc: {100*b_corr/total:.2f}%, Loss: {b_loss/total:.4f}")
+plt.plot(range(1,11), baseline_losses, marker='o')
+plt.title("Baseline Loss"); plt.xlabel("Epoch"); plt.ylabel("Loss"); plt.show()
+
+
+# === 2. Deep MLP (6 hidden layers) ===
+print("2번 시행")
+
+class DeepMLP(nn.Module):
+    def __init__(self, hidden_size=32):
+        super(DeepMLP, self).__init__()
+        self.fc1 = nn.Linear(28*28, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.fc3 = nn.Linear(hidden_size, hidden_size)
+        self.fc4 = nn.Linear(hidden_size, hidden_size)
+        self.fc5 = nn.Linear(hidden_size, hidden_size)
+        self.fc6 = nn.Linear(hidden_size, hidden_size)
+        self.out = nn.Linear(hidden_size, 10)
+    def forward(self, x):
+        x = x.view(x.size(0), -1)
+        for fc in (self.fc1, self.fc2, self.fc3, self.fc4, self.fc5, self.fc6):
+            x = torch.sigmoid(fc(x))
+        return self.out(x)
+
+deep_model = DeepMLP(32).to(device)
+deep_opt   = optim.SGD(deep_model.parameters(), lr=0.1)
+
+deep_losses = []
+deep_model.train()
+start = time.time()
+for epoch in range(10):
+    running=0.0
+    for imgs, labels in trainloader:
+        imgs, labels = imgs.to(device), labels.to(device)
+        deep_opt.zero_grad()
+        out = deep_model(imgs)
+        loss= loss_fn(out, labels)
+        loss.backward()
+        deep_opt.step()
+        running += loss.item()
+    avg = running/len(trainloader)
+    deep_losses.append(avg)
+    print(f"[Deep] Epoch {epoch+1}/10 Loss: {avg:.4f}")
+print(f"[Deep] Time: {time.time()-start:.1f}s")
+
+deep_model.eval()
+d_loss=0; d_corr=0; total=0
+with torch.no_grad():
+    for imgs, labels in testloader:
+        imgs, labels = imgs.to(device), labels.to(device)
+        out = deep_model(imgs)
+        d_loss  += loss_fn(out, labels).item()*labels.size(0)
+        _,preds= torch.max(out,1)
+        d_corr += (preds==labels).sum().item()
+        total  += labels.size(0)
+print(f"[Deep] Acc: {100*d_corr/total:.2f}%, Loss: {d_loss/total:.4f}")
+plt.plot(range(1,11), deep_losses, marker='o')
+plt.title("Deep MLP Loss"); plt.xlabel("Epoch"); plt.ylabel("Loss"); plt.show()
+
+
+# === 3. Wide MLP (hidden=512) ===
+print("3번 시행")
+
+wide_model = BaselineMLP(512).to(device)
+wide_opt   = optim.SGD(wide_model.parameters(), lr=0.1)
+
+wide_losses = []
+wide_model.train()
+start = time.time()
+for epoch in range(10):
+    running=0.0
+    for imgs, labels in trainloader:
+        imgs, labels = imgs.to(device), labels.to(device)
+        wide_opt.zero_grad()
+        out = wide_model(imgs)
+        loss= loss_fn(out, labels)
+        loss.backward()
+        wide_opt.step()
+        running+= loss.item()
+    avg= running/len(trainloader)
+    wide_losses.append(avg)
+    print(f"[Wide] Epoch {epoch+1}/10 Loss: {avg:.4f}")
+print(f"[Wide] Time: {time.time()-start:.1f}s")
+
+wide_model.eval()
+w_loss=0; w_corr=0; total=0
+with torch.no_grad():
+    for imgs, labels in testloader:
+        imgs, labels= imgs.to(device), labels.to(device)
+        out= wide_model(imgs)
+        w_loss += loss_fn(out, labels).item()*labels.size(0)
+        _,preds= torch.max(out,1)
+        w_corr+= (preds==labels).sum().item()
+        total+= labels.size(0)
+print(f"[Wide] Acc: {100*w_corr/total:.2f}%, Loss: {w_loss/total:.4f}")
+plt.plot(range(1,11), wide_losses, marker='o')
+plt.title("Wide MLP Loss"); plt.xlabel("Epoch"); plt.ylabel("Loss"); plt.show()
+
+
+# === 4. Activation: Tanh vs ReLU ===
+print("4번 시행")
+
+class MLP_Tanh(BaselineMLP):
+    def forward(self, x):
+        x = x.view(x.size(0), -1)
+        x = torch.tanh(self.fc1(x))
+        return self.fc2(x)
+class MLP_ReLU(BaselineMLP):
+    def forward(self, x):
+        x = x.view(x.size(0), -1)
+        x = F.relu(self.fc1(x))
+        return self.fc2(x)
+
+tanh_model = MLP_Tanh(32).to(device)
+relu_model = MLP_ReLU(32).to(device)
+tanh_opt   = optim.SGD(tanh_model.parameters(), lr=0.1)
+relu_opt   = optim.SGD(relu_model.parameters(), lr=0.1)
+
+# for question number 5, losses
+act_losses = {}
+
+for name, model_act, opt_act in [("Tanh", tanh_model, tanh_opt), ("ReLU", relu_model, relu_opt)]:
+    losses=[]; model_act.train(); start=time.time()
+    for epoch in range(10):
+        run=0.0
+        for imgs,labels in trainloader:
+            imgs,labels=imgs.to(device),labels.to(device)
+            opt_act.zero_grad()
+            out=model_act(imgs)
+            loss=loss_fn(out, labels)
+            loss.backward(); opt_act.step()
+            run+=loss.item()
+        losses.append(run/len(trainloader))
+        print(f"[{name}] Epoch {epoch+1}/10 Loss: {losses[-1]:.4f}")
+    print(f"[{name}] Time: {time.time()-start:.1f}s")
+    # 에포크별 손실값을 딕셔너리에 저장
+    act_losses[name] = losses
+    # 평가
+    corr=0; t_loss=0; tot=0; model_act.eval()
+    with torch.no_grad():
+        for imgs,labels in testloader:
+            imgs,labels=imgs.to(device),labels.to(device)
+            out=model_act(imgs)
+            t_loss+=loss_fn(out, labels).item()*labels.size(0)
+            _,preds=torch.max(out,1); corr+=(preds==labels).sum().item(); tot+=labels.size(0)
+    print(f"[{name}] Acc: {100*corr/tot:.2f}%, Loss: {t_loss/tot:.4f}")
+    plt.plot(range(1,11), losses, marker='o', label=name)
+plt.title("Activation Comparison"); plt.xlabel("Epoch"); plt.ylabel("Loss")
+plt.legend(); plt.show()
+
+# 루프 밖에서 ReLU 손실값 가져오기
+relu_losses = act_losses["ReLU"]
+print("ReLU losses by epoch:", relu_losses)
+
+
+# === 5. Optimizer Comparison on best model (ReLU MLP) ===
+# use MLP_ReLU defined earlier
+print("5번 시행")
+
+adam_model = MLP_ReLU(32).to(device)
+adam_opt   = optim.Adam(adam_model.parameters(), lr=0.1)
+
+adam_losses = []
+adam_model.train()
+start = time.time()
+for epoch in range(10):
+    run = 0.0
+    for imgs, labels in trainloader:
+        imgs, labels = imgs.to(device), labels.to(device)
+        adam_opt.zero_grad()
+        out = adam_model(imgs)
+        loss = loss_fn(out, labels)
+        loss.backward()
+        adam_opt.step()
+        run += loss.item()
+    adam_losses.append(run/len(trainloader))
+    print(f"[Adam‑ReLU] Epoch {epoch+1}/10 Loss: {adam_losses[-1]:.4f}")
+print(f"[Adam‑ReLU] Time: {time.time()-start:.1f}s")
+
+adam_model.eval()
+a_corr = 0; a_loss = 0; tot = 0
+with torch.no_grad():
+    for imgs, labels in testloader:
+        imgs, labels = imgs.to(device), labels.to(device)
+        out = adam_model(imgs)
+        a_loss += loss_fn(out, labels).item() * labels.size(0)
+        _, preds = torch.max(out, 1)
+        a_corr += (preds == labels).sum().item()
+        tot += labels.size(0)
+print(f"[Adam‑ReLU] Acc: {100*a_corr/tot:.2f}%, Loss: {a_loss/tot:.4f}")
+
+plt.plot(range(1,11), relu_losses, marker='o', label='SGD‑ReLU')
+plt.plot(range(1,11), adam_losses, marker='x', label='Adam‑ReLU')
+plt.title("Optimizer Comparison (ReLU MLP)")
+plt.xlabel("Epoch"); plt.ylabel("Loss")
+plt.legend(); plt.show()
+
+
+# === 6. Learning Rate Comparison on ReLU MLP + Adam ===
+print("6번 시행")
+
+for lr in [1.0, 0.1, 0.01]:
+    lr_model = MLP_ReLU(32).to(device)
+    lr_opt   = optim.Adam(lr_model.parameters(), lr=lr)
+    lr_losses = []
+    lr_model.train()
+    start = time.time()
+    for epoch in range(10):
+        run = 0.0
+        for imgs, labels in trainloader:
+            imgs, labels = imgs.to(device), labels.to(device)
+            lr_opt.zero_grad()
+            out = lr_model(imgs)
+            loss = loss_fn(out, labels)
+            loss.backward()
+            lr_opt.step()
+            run += loss.item()
+        lr_losses.append(run/len(trainloader))
+    print(f"[ReLU+Adam lr={lr}] Time: {time.time()-start:.1f}s")
+
+    lr_model.eval()
+    corr = 0; t_loss = 0; tot = 0
+    with torch.no_grad():
+        for imgs, labels in testloader:
+            imgs, labels = imgs.to(device), labels.to(device)
+            out = lr_model(imgs)
+            t_loss += loss_fn(out, labels).item() * labels.size(0)
+            _, preds = torch.max(out, 1)
+            corr += (preds == labels).sum().item()
+            tot += labels.size(0)
+    print(f"[ReLU+Adam lr={lr}] Acc: {100*corr/tot:.2f}%, Loss: {t_loss/tot:.4f}")
+    plt.plot(range(1,11), lr_losses, marker='o', label=f"lr={lr}")
+
+plt.title("Learning Rate Comparison (ReLU MLP + Adam)")
+plt.xlabel("Epoch"); plt.ylabel("Loss")
+plt.legend(); plt.show()
+

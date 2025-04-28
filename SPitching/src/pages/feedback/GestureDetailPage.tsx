@@ -37,7 +37,7 @@ const GestureDetailPage = () => {
         <div className='col-span-0 md:col-span-1' />
 
         {/* 제목 + 날짜 + 돌아가기 버튼 */}
-        <HeaderSection title='기후 변화와 글로벌 경제: 지속 가능한 미래를 위한 대응 전략' />
+        <HeaderSection title='졸프 중간 발표 데모' />
 
         {/* 제스처 점수 카드 */}
         <ScoreSummaryCard

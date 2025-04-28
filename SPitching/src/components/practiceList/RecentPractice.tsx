@@ -7,7 +7,7 @@ import ScorePieChart from '../common/ScorePieChart';
 import EyeIcon from '../../assets/eye.svg?react';
 import GestureIcon from '../../assets/gesture.svg?react';
 import SimilarityIcon from '../../assets/sim.svg?react';
-import MockPPT from '../../assets/mock_ppt.png';
+import MockPPT from '../../assets/mock_ppt_1.png';
 import FluencyIcon from '../../assets/fluency.svg?react';
 
 import { prevPracticeData } from '@/assets/mockData';
@@ -89,7 +89,7 @@ const RecentPractice = ({
 
       {/* 좌측 요약 상자 */}
       <div className='white-card col-span-3 row-start-2 gap-1'>
-        <div className='mb-3 aspect-[16/9] w-full overflow-hidden'>
+        <div className='mt-3 mb-9 aspect-[16/9] w-full overflow-hidden shadow-xl shadow-gray-200'>
           {/* 확대 삭제하기 */}
           <img
             src={MockPPT}
@@ -98,12 +98,12 @@ const RecentPractice = ({
           />
         </div>
         <div className='flex flex-row items-center gap-2'>
-          <span className='s2 text-gray-900'>최근 연습</span>
-          <span className='b2 text-gray-700'>{last_practice}</span>
+          <span className='s1 text-gray-900'>최근 연습</span>
+          <span className='b1 text-gray-700'>{last_practice}</span>
         </div>
         <div className='flex flex-row items-center gap-3 text-xs'>
-          <span className='s2 text-gray-900'>연습 횟수</span>
-          <span className='b2 text-gray-700'>{practice_count}</span>
+          <span className='s1 text-gray-900'>연습 횟수</span>
+          <span className='b1 text-gray-700'>{practice_count}</span>
         </div>
       </div>
 
@@ -177,16 +177,6 @@ const RecentPractice = ({
           </button>
         </div>
       </div>
-
-      {/* 오른쪽: 부분 연습 + 피드백 리포트 (가로 배치, 미니멀) */}
-      {/* <div className='col-span-3 col-start-5 row-span-1 row-start-3 flex flex-row items-center justify-between gap-2 overflow-hidden'>
-        <button className='flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-800 transition hover:bg-gray-100'>
-          ✂️ 부분 연습
-        </button>
-        <button className='flex-1 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-800 transition hover:bg-gray-100'>
-          📄 피드백 보기
-        </button>
-      </div> */}
     </div>
   );
 };
