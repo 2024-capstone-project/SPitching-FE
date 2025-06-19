@@ -8,7 +8,7 @@ MediaRecorder 기반 발표 영상 녹화하고, AI 분석 결과를 차트로 �
 > 
 > `React + TypeScript + Tailwind CSS + Vite`
 > 
-
+[SPitching을 체험해보세요!](https://www.spitching.store/)
 ## 🎯 **Project Goal**
 
 발표에 대한 불안감을 극복하고 자신감을 높이기 위해
