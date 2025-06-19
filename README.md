@@ -93,7 +93,8 @@ VITE_AI_API_BASE_URL= AI 서버 API 요청 엔드포인트
 
 ## 🔗 **Related Links**
 
-- 🧠 [AI 서버 리드미](https://github.com/2024-capstone-project/SPitching-AI_SERVER.git)
+- 🧠 [AI 리드미](https://github.com/2024-capstone-project/SPitching-AI_SERVER.git)
 - 🔐 [백엔드 리드미](https://github.com/2024-capstone-project/SPitching-BE.git)
+- 📋 [시제품 사용설명서](https://drive.google.com/file/d/1lfsYyS6EzFBWItVwZAlTmVsQtMTbv5En/view?usp=sharing)
 
 ---
